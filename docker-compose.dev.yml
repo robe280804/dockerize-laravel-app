@@ -12,10 +12,14 @@ services:
         container_name: laravel_app_php_container
         restart: unless-stopped
         working_dir: /var/www
+        env_file:
+            - .env
         volumes:
             - ./:/var/www
         networks:
             - laravel_app_network
+        depends_on:
+            - db
 
     # Nginx service
     webserver:
@@ -24,8 +28,43 @@ services:
         restart: unless-stopped
         ports:
             - "6162:80"
+        volumes:
+            - ./:/var/www
+            - ./docker-compose/nginx/:/etc/nginx/conf.d
         networks:
             - laravel_app_network
+        depends_on:
+            - app
+
+    # MySQL service
+    db:
+        image: mysql:latest
+        container_name: laravel_app_db_container
+        restart: unless-stopped
+        ports:
+            - '3307:3306'
+        environment:
+            MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+            MYSQL_DATABASE: ${DB_DATABASE}
+            MYSQL_USER: ${DB_USERNAME}
+            MYSQL_PASSWORD: ${DB_PASSWORD}
+        volumes:
+            - mysql_data:/var/lib/mysql
+        networks:
+            - laravel_app_network
+
+    # Redis service
+    redis:
+        image: redis:latest
+        container_name: laravel_app_redis_container
+        ports:
+            - "7379:6379"
+        networks:
+            - laravel_app_network
+
+volumes:
+    mysql_data:
+        driver: local
 
 networks:
     laravel_app_network:
